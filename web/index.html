@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Absensi Peleton 2026/2027</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --surface: #182028;
+      --surface-2: #1f2a35;
+      --border: #2a3744;
+      --text: #eef2f6;
+      --muted: #8b9bb0;
+      --accent: #3b82f6;
+      --accent-soft: rgba(59, 130, 246, 0.14);
+      --putra: #38bdf8;
+      --putri: #f472b6;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --radius: 12px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.45;
+      padding-bottom: 72px;
+      -webkit-font-smoothing: antialiased;
+    }
+    .num { font-variant-numeric: tabular-nums; }
+    header {
+      position: sticky; top: 0; z-index: 20;
+      background: rgba(15, 20, 25, 0.92);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    header h1 { font-size: 16px; font-weight: 700; letter-spacing: -0.01em; }
+    header .sub { font-size: 11px; color: var(--muted); }
+    .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+    button {
+      font: inherit; cursor: pointer; border: 1px solid var(--border);
+      background: var(--surface-2); color: var(--text);
+      padding: 7px 11px; border-radius: 8px; font-size: 12px; font-weight: 600;
+      transition: background 0.15s, border-color 0.15s, transform 0.08s;
+    }
+    button:active { transform: scale(0.97); }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    button.danger { background: rgba(239, 68, 68, 0.16); border-color: rgba(239, 68, 68, 0.45); color: #fca5a5; }
+    button.ghost { background: transparent; }
+
+    .tabs {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px;
+      padding: 10px 16px 4px;
+    }
+    .tab-btn {
+      padding: 9px 6px; text-align: center; border-radius: 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--muted); font-size: 12px; font-weight: 600;
+    }
+    .tab-btn.active {
+      background: var(--accent-soft); border-color: var(--accent); color: #93c5fd;
+    }
+
+    main { padding: 12px 16px; max-width: 1120px; margin: 0 auto; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .cards {
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 14px;
+    }
+    @media (min-width: 720px) { .cards { grid-template-columns: repeat(4, 1fr); } }
+    .card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px 14px;
+    }
+    .card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .card .val { font-size: 26px; font-weight: 800; margin-top: 2px; }
+    .c-putra { color: var(--putra); }
+    .c-putri { color: var(--putri); }
+
+    .box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 14px; margin-bottom: 14px;
+    }
+    .box-title {
+      font-size: 13px; font-weight: 700; margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .bar-row {
+      display: grid; grid-template-columns: 78px 1fr 54px; align-items: center;
+      gap: 8px; margin-bottom: 7px; font-size: 12px;
+    }
+    .bar-track {
+      height: 14px; background: var(--surface-2); border-radius: 99px;
+      overflow: hidden; display: flex;
+    }
+    .bar-p { background: var(--putra); height: 100%; }
+    .bar-w { background: var(--putri); height: 100%; }
+
+    .toolbar {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px;
+    }
+    input, select, textarea {
+      font: inherit; color: var(--text); background: var(--surface);
+      border: 1px solid var(--border); border-radius: 8px;
+      padding: 8px 10px; font-size: 13px; outline: none;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    .toolbar input { flex: 1; min-width: 160px; }
+
+    .table-wrap {
+      overflow-x: auto; border: 1px solid var(--border);
+      border-radius: var(--radius); background: var(--surface);
+    }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td {
+      padding: 8px 9px; border-bottom: 1px solid var(--border);
+      text-align: left; white-space: nowrap;
+    }
+    th {
+      background: var(--surface-2); color: var(--muted); font-size: 11px;
+      text-transform: uppercase; letter-spacing: 0.03em; position: sticky; top: 0;
+    }
+    td.sticky, th.sticky {
+      position: sticky; left: 0; background: var(--surface); z-index: 2;
+      border-right: 1px solid var(--border);
+    }
+    th.sticky { background: var(--surface-2); z-index: 3; }
+    tr.clickable:hover td { background: rgba(59, 130, 246, 0.08); cursor: pointer; }
+    .pill {
+      display: inline-block; padding: 2px 7px; border-radius: 99px;
+      font-size: 11px; font-weight: 700;
+    }
+    .pill-0 { color: var(--muted); }
+    .pill-low { background: rgba(245, 158, 11, 0.16); color: #fbbf24; }
+    .pill-high { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+    .tag {
+      display: inline-block; padding: 2px 6px; border-radius: 6px;
+      font-size: 10px; font-weight: 700; background: var(--surface-2); color: var(--muted);
+    }
+    .tag.putra { background: rgba(56, 189, 248, 0.15); color: var(--putra); }
+    .tag.putri { background: rgba(244, 114, 182, 0.15); color: var(--putri); }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0, 0, 0, 0.68);
+      display: none; align-items: flex-end; justify-content: center; z-index: 50;
+    }
+    @media (min-width: 640px) { .modal-backdrop { align-items: center; padding: 16px; } }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      width: 100%; max-width: 540px; max-height: 90vh; overflow-y: auto;
+      border-radius: 16px 16px 0 0; padding: 16px;
+    }
+    @media (min-width: 640px) { .modal { border-radius: 16px; } }
+    .modal-head {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid var(--border);
+    }
+    .form-grid { display: grid; gap: 10px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 600; }
+    .form-grid input, .form-grid select { width: 100%; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+    .chip {
+      font-size: 11px; padding: 4px 8px; border-radius: 99px;
+      background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
+    }
+    .log-item {
+      display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      padding: 8px 10px; background: var(--surface-2); border-radius: 8px; margin-bottom: 6px;
+      font-size: 12px;
+    }
+    .toast {
+      position: fixed; bottom: 18px; left: 50%; transform: translateX(-50%);
+      background: #111827; border: 1px solid var(--accent); color: #fff;
+      padding: 9px 16px; border-radius: 99px; font-size: 12px; font-weight: 600;
+      z-index: 80; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+    }
+    .toast.show { display: block; }
+    .empty { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Absensi Peleton 2026/2027</h1>
+      <div class="sub" id="syncInfo">Memuat data...</div>
+    </div>
+    <div class="actions">
+      <button class="primary" onclick="openQuickLogModal()">+ Absen</button>
+      <button onclick="openNewStudentModal()">+ Siswa</button>
+      <button onclick="exportCSV()">CSV</button>
+      <button class="ghost" onclick="loadAll()">↻</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab-btn" data-tab="putra" onclick="switchTab('putra')">👦 Putra</button>
+    <button class="tab-btn" data-tab="putri" onclick="switchTab('putri')">👧 Putri</button>
+    <button class="tab-btn" data-tab="logs" onclick="switchTab('logs')">📝 Log</button>
+  </nav>
+
+  <main>
+    <section id="tab-dashboard" class="panel active">
+      <div class="cards">
+        <div class="card"><div class="label">Total Siswa</div><div class="val num" id="statStudents">-</div></div>
+        <div class="card"><div class="label">Total Tidak Hadir</div><div class="val num" id="statTotalAbs">-</div></div>
+        <div class="card"><div class="label">Peleton Putra</div><div class="val num c-putra" id="statPutraAbs">-</div></div>
+        <div class="card"><div class="label">Peleton Putri</div><div class="val num c-putri" id="statPutriAbs">-</div></div>
+      </div>
+
+      <div class="box">
+        <div class="box-title">
+          <span>Ketidakhadiran Per Bulan</span>
+          <span style="font-size:11px; color:var(--muted)">
+            <span style="color:var(--putra)">■ Putra</span> &nbsp; <span style="color:var(--putri)">■ Putri</span>
+          </span>
+        </div>
+        <div id="monthlyChart"></div>
+      </div>
+
+      <div class="box">
+        <div class="box-title"><span>Siswa Dengan Ketidakhadiran Terbanyak</span></div>
+        <div id="topAbsentList"></div>
+      </div>
+    </section>
+
+    <section id="tab-putra" class="panel">
+      <div class="toolbar">
+        <input id="searchPutra" placeholder="Cari nama lengkap, panggilan, atau kelas..." oninput="renderPeleton('PUTRA')" />
+        <select id="kelasPutra" onchange="renderPeleton('PUTRA')"><option value="">Semua Kelas</option></select>
+        <select id="bulanPutra" onchange="renderPeleton('PUTRA')"><option value="">Semua Bulan</option></select>
+      </div>
+      <div id="summaryPutra"></div>
+      <div class="table-wrap" id="tablePutra"></div>
+    </section>
+
+    <section id="tab-putri" class="panel">
+      <div class="toolbar">
+        <input id="searchPutri" placeholder="Cari nama lengkap, panggilan, atau kelas..." oninput="renderPeleton('PUTRI')" />
+        <select id="kelasPutri" onchange="renderPeleton('PUTRI')"><option value="">Semua Kelas</option></select>
+        <select id="bulanPutri" onchange="renderPeleton('PUTRI')"><option value="">Semua Bulan</option></select>
+      </div>
+      <div id="summaryPutri"></div>
+      <div class="table-wrap" id="tablePutri"></div>
+    </section>
+
+    <section id="tab-logs" class="panel">
+      <div class="toolbar">
+        <input id="searchLogs" placeholder="Cari nama atau keterangan..." oninput="renderLogs()" />
+        <select id="filterLogPeleton" onchange="renderLogs()">
+          <option value="">Semua Peleton</option>
+          <option value="PUTRA">PUTRA</option>
+          <option value="PUTRI">PUTRI</option>
+        </select>
+        <select id="filterLogBulan" onchange="renderLogs()"><option value="">Semua Bulan</option></select>
+      </div>
+      <div id="logsContainer"></div>
+    </section>
+  </main>
+
+  <!-- Modal Detail & Edit Siswa -->
+  <div class="modal-backdrop" id="studentModal">
+    <div class="modal">
+      <div class="modal-head">
+        <strong id="smTitle">Detail Siswa</strong>
+        <button onclick="closeModal('studentModal')">✕</button>
+      </div>
+      <div class="form-grid">
+        <input type="hidden" id="smId" />
+        <div>
+          <label>Nama Lengkap</label>
+          <input id="smNama" />
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Nama Lapangan (Panggilan)</label>
+            <input id="smLapangan" />
+          </div>
+          <div>
+            <label>Kelas</label>
+            <input id="smKelas" placeholder="misal: X TKJ 1" />
+          </div>
+        </div>
+        <div>
+          <label>Peleton</label>
+          <select id="smPeleton">
+            <option value="PUTRA">PUTRA</option>
+            <option value="PUTRI">PUTRI</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:space-between; margin-top:4px;">
+          <button class="danger" id="smDeleteBtn" onclick="deleteStudent()">Hapus Siswa</button>
+          <button class="primary" onclick="saveStudent()">Simpan Data Siswa</button>
+        </div>
+      </div>
+
+      <div id="smAbsenSection" style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border);">
+        <div class="box-title"><span>Catat Ketidakhadiran Cepat</span></div>
+        <div class="form-grid">
+          <div class="form-row">
+            <div>
+              <label>Bulan</label>
+              <select id="smLogBulan"></select>
+            </div>
+            <div>
+              <label>Jumlah</label>
+              <input id="smLogJml" type="number" min="1" max="31" value="1" />
+            </div>
+          </div>
+          <div>
+            <label>Keterangan</label>
+            <input id="smLogKet" placeholder="sakit / izin / alfa / tm / acara..." value="sakit" />
+            <div class="chips">
+              <button type="button" class="chip" onclick="setVal('smLogKet','sakit')">sakit</button>
+              <button type="button" class="chip" onclick="setVal('smLogKet','izin')">izin</button>
+              <button type="button" class="chip" onclick="setVal('smLogKet','alfa')">alfa</button>
+              <button type="button" class="chip" onclick="setVal('smLogKet','tm')">tm</button>
+              <button type="button" class="chip" onclick="setVal('smLogKet','acara')">acara</button>
+              <button type="button" class="chip" onclick="setVal('smLogKet','mpk/osis')">mpk/osis</button>
+            </div>
+          </div>
+          <button class="primary" onclick="addStudentLog()">+ Tambah Catatan Tidak Hadir</button>
+        </div>
+
+        <div class="box-title" style="margin-top:14px;"><span>Riwayat Ketidakhadiran Siswa Ini</span></div>
+        <div id="smLogList"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Catat Absen Cepat -->
+  <div class="modal-backdrop" id="quickLogModal">
+    <div class="modal">
+      <div class="modal-head">
+        <strong>Catat Ketidakhadiran</strong>
+        <button onclick="closeModal('quickLogModal')">✕</button>
+      </div>
+      <div class="form-grid">
+        <div>
+          <label>Pilih Siswa</label>
+          <select id="qlSiswa"></select>
+        </div>
+        <div class="form-row">
+          <div>
+            <label>Bulan</label>
+            <select id="qlBulan"></select>
+          </div>
+          <div>
+            <label>Jumlah</label>
+            <input id="qlJml" type="number" min="1" max="31" value="1" />
+          </div>
+        </div>
+        <div>
+          <label>Keterangan</label>
+          <input id="qlKet" value="sakit" />
+          <div class="chips">
+            <button type="button" class="chip" onclick="setVal('qlKet','sakit')">sakit</button>
+            <button type="button" class="chip" onclick="setVal('qlKet','izin')">izin</button>
+            <button type="button" class="chip" onclick="setVal('qlKet','alfa')">alfa</button>
+            <button type="button" class="chip" onclick="setVal('qlKet','tm')">tm</button>
+            <button type="button" class="chip" onclick="setVal('qlKet','acara')">acara</button>
+          </div>
+        </div>
+        <button class="primary" onclick="submitQuickLog()">Simpan Absensi</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Edit Log -->
+  <div class="modal-backdrop" id="editLogModal">
+    <div class="modal">
+      <div class="modal-head">
+        <strong>Edit Catatan Absensi</strong>
+        <button onclick="closeModal('editLogModal')">✕</button>
+      </div>
+      <div class="form-grid">
+        <input type="hidden" id="elId" />
+        <div id="elSiswaInfo" style="font-size:13px; font-weight:700;"></div>
+        <div class="form-row">
+          <div>
+            <label>Bulan</label>
+            <select id="elBulan"></select>
+          </div>
+          <div>
+            <label>Jumlah</label>
+            <input id="elJml" type="number" min="1" max="31" />
+          </div>
+        </div>
+        <div>
+          <label>Keterangan</label>
+          <input id="elKet" />
+        </div>
+        <div style="display:flex; gap:8px; justify-content:space-between;">
+          <button class="danger" onclick="deleteLogEntry()">Hapus Catatan</button>
+          <button class="primary" onclick="saveLogEdit()">Simpan Perubahan</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const MONTHS = ["Agustus","September","Oktober","November","Desember","Januari","Februari","Maret","April","Mei","Juni","Juli"];
+    const SHORT_MONTHS = ["Agu","Sep","Okt","Nov","Des","Jan","Feb","Mar","Apr","Mei","Jun","Jul"];
+    let state = { summary: null, students: [], logs: [] };
+
+    const tg = window.Telegram && window.Telegram.WebApp;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    function authHeaders() {
+      const initData = (tg && tg.initData) ? tg.initData : "";
+      return { "Content-Type": "application/json", "X-Telegram-Init-Data": initData };
+    }
+
+    async function api(url, opts = {}) {
+      const res = await fetch(url, {
+        ...opts,
+        headers: { ...authHeaders(), ...(opts.headers || {}) }
+      });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = { error: text }; }
+      if (!res.ok) throw new Error(data.error || ("HTTP " + res.status));
+      return data;
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(window._toastTimer);
+      window._toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+    }
+
+    function setVal(id, v) { document.getElementById(id).value = v; }
+
+    function populateMonthSelects() {
+      const nowMonthIdx = (new Date().getMonth() - 7 + 12) % 12; // Agustus = 0
+      const defMonth = MONTHS[nowMonthIdx] || "November";
+      ["smLogBulan", "qlBulan", "elBulan"].forEach(id => {
+        const sel = document.getElementById(id);
+        sel.innerHTML = MONTHS.map(m => `<option value="${m}">${m}</option>`).join("");
+        sel.value = defMonth;
+      });
+      const fl = document.getElementById("filterLogBulan");
+      fl.innerHTML = `<option value="">Semua Bulan</option>` + MONTHS.map(m => `<option value="${m}">${m}</option>`).join("");
+      ["bulanPutra", "bulanPutri"].forEach(id => {
+        const sel = document.getElementById(id);
+        sel.innerHTML = `<option value="">Semua Bulan</option>` + MONTHS.map(m => `<option value="${m}">${m}</option>`).join("");
+      });
+    }
+
+    function applyInitialQueryParams() {
+      const qs = new URLSearchParams(window.location.search);
+      const tabRaw = (qs.get("tab") || "").toUpperCase();
+      const bulRaw = qs.get("bulan") || "";
+      if (bulRaw && MONTHS.includes(bulRaw)) {
+        document.getElementById("bulanPutra").value = bulRaw;
+        document.getElementById("bulanPutri").value = bulRaw;
+        document.getElementById("filterLogBulan").value = bulRaw;
+      }
+      if (tabRaw === "PUTRA") switchTab("putra");
+      else if (tabRaw === "PUTRI") switchTab("putri");
+      else if (tabRaw === "LOGS") switchTab("logs");
+    }
+
+    async function loadAll() {
+      try {
+        const data = await api("/api/overview");
+        state = data;
+        renderDashboard();
+        populateClassFilter("PUTRA", "kelasPutra");
+        populateClassFilter("PUTRI", "kelasPutri");
+        renderPeleton("PUTRA");
+        renderPeleton("PUTRI");
+        renderLogs();
+        document.getElementById("syncInfo").textContent =
+          `${state.summary.total_siswa} siswa • ${state.summary.total_tidak_hadir} ketidakhadiran`;
+      } catch (err) {
+        document.getElementById("syncInfo").textContent = "Gagal memuat: " + err.message;
+        showToast("Error: " + err.message);
+      }
+    }
+
+    function switchTab(name) {
+      document.querySelectorAll(".tab-btn").forEach(b => b.classList.toggle("active", b.dataset.tab === name));
+      document.querySelectorAll(".panel").forEach(p => p.classList.toggle("active", p.id === "tab-" + name));
+    }
+
+    function formatCountBadge(v, suffix = "") {
+      if (v > 3) return `<span class="pill pill-high num">${v}${suffix}</span>`;
+      if (v === 3) return `<span class="pill pill-low num">${v}${suffix}</span>`;
+      if (v > 0) return `<span class="num">${v}${suffix}</span>`;
+      return `<span class="num" style="color:var(--muted)">0${suffix}</span>`;
+    }
+
+    function renderDashboard() {
+      const s = state.summary;
+      document.getElementById("statStudents").textContent = s.total_siswa;
+      document.getElementById("statTotalAbs").textContent = s.total_tidak_hadir;
+      document.getElementById("statPutraAbs").textContent = s.total_putra;
+      document.getElementById("statPutriAbs").textContent = s.total_putri;
+
+      const maxVal = Math.max(1, ...s.monthly.map(m => m.total));
+      document.getElementById("monthlyChart").innerHTML = s.monthly.map(m => {
+        const pW = (m.putra / maxVal) * 100;
+        const wW = (m.putri / maxVal) * 100;
+        return `
+          <div class="bar-row">
+            <div>${m.bulan}</div>
+            <div class="bar-track">
+              <div class="bar-p" style="width:${pW}%" title="Putra: ${m.putra}"></div>
+              <div class="bar-w" style="width:${wW}%" title="Putri: ${m.putri}"></div>
+            </div>
+            <div class="num" style="text-align:right; color:${m.total ? 'var(--text)' : 'var(--muted)'}">
+              ${m.total} <span style="color:var(--muted); font-size:10px">(${m.putra}/${m.putri})</span>
+            </div>
+          </div>`;
+      }).join("");
+
+      const top = [...state.students].sort((a, b) => b.total - a.total).slice(0, 10).filter(x => x.total > 0);
+      document.getElementById("topAbsentList").innerHTML = top.length ? top.map((st, idx) => `
+        <div class="log-item" style="cursor:pointer" onclick="openStudentModal(${st.id})">
+          <div>
+            <strong>#${idx+1} ${esc(st.nama_lengkap)}</strong>
+            <span class="tag ${st.peleton === 'PUTRA' ? 'putra' : 'putri'}">${st.peleton}</span>
+            <div style="font-size:11px; color:var(--muted)">Panggilan: ${esc(st.nama_lapangan)} • ${esc(st.kelas)}</div>
+          </div>
+          ${formatCountBadge(st.total, "x")}
+        </div>
+      `).join("") : `<div class="empty">Belum ada ketidakhadiran tercatat.</div>`;
+    }
+
+    function populateClassFilter(peleton, selectId) {
+      const sel = document.getElementById(selectId);
+      const cur = sel.value;
+      const classes = [...new Set(state.students.filter(s => s.peleton === peleton).map(s => s.kelas).filter(Boolean))].sort();
+      sel.innerHTML = `<option value="">Semua Kelas</option>` + classes.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+      sel.value = classes.includes(cur) ? cur : "";
+    }
+
+    function renderPeleton(peleton) {
+      const q = document.getElementById(peleton === "PUTRA" ? "searchPutra" : "searchPutri").value.trim().toLowerCase();
+      const k = document.getElementById(peleton === "PUTRA" ? "kelasPutra" : "kelasPutri").value;
+      const bul = document.getElementById(peleton === "PUTRA" ? "bulanPutra" : "bulanPutri").value;
+      const list = state.students.filter(s => {
+        if (s.peleton !== peleton) return false;
+        if (k && s.kelas !== k) return false;
+        if (!q) return true;
+        return s.nama_lengkap.toLowerCase().includes(q) ||
+               s.nama_lapangan.toLowerCase().includes(q) ||
+               s.kelas.toLowerCase().includes(q);
+      });
+
+      if (bul) {
+        list.sort((a, b) => ((b.months && b.months[bul]) || 0) - ((a.months && a.months[bul]) || 0) || b.total - a.total);
+      }
+
+      const sumEl = document.getElementById(peleton === "PUTRA" ? "summaryPutra" : "summaryPutri");
+      const totalScopeAbs = list.reduce((acc, s) => acc + (bul ? ((s.months && s.months[bul]) || 0) : s.total), 0);
+      const absStudents = list.filter(s => (bul ? ((s.months && s.months[bul]) || 0) : s.total) > 0).length;
+      const redCount = list.filter(s => (bul ? ((s.months && s.months[bul]) || 0) : s.total) > 3).length;
+      const yelCount = list.filter(s => (bul ? ((s.months && s.months[bul]) || 0) : s.total) === 3).length;
+      sumEl.innerHTML = `
+        <div class="box" style="padding:10px 14px; margin-bottom:10px; display:flex; flex-wrap:wrap; gap:12px; align-items:center; justify-content:space-between;">
+          <div style="font-size:12px;">
+            <strong>${bul ? `Rekap ${esc(bul)}` : "Rekap Setahun"} • Peleton ${peleton}</strong>
+            <span style="color:var(--muted); margin-left:8px;">${list.length} siswa • ${absStudents} absen • Total ${totalScopeAbs}x</span>
+          </div>
+          <div style="display:flex; gap:8px; font-size:11px;">
+            ${redCount ? `<span class="pill pill-high num">&gt;3x: ${redCount}</span>` : ""}
+            ${yelCount ? `<span class="pill pill-low num">=3x: ${yelCount}</span>` : ""}
+            ${!redCount && !yelCount ? `<span style="color:var(--ok); font-weight:600;">Semua &lt;3x</span>` : ""}
+          </div>
+        </div>`;
+
+      const container = document.getElementById(peleton === "PUTRA" ? "tablePutra" : "tablePutri");
+      if (!list.length) {
+        container.innerHTML = `<div class="empty">Tidak ada data siswa yang cocok.</div>`;
+        return;
+      }
+
+      const headMonths = MONTHS.map((m, idx) => {
+        const hl = bul === m ? ` style="color:var(--accent);"` : "";
+        return `<th class="num"${hl}>${SHORT_MONTHS[idx]}</th>`;
+      }).join("");
+      const rows = list.map((s, idx) => {
+        const mCells = MONTHS.map(m => {
+          const v = (s.months && s.months[m]) || 0;
+          const hl = bul === m ? ` style="background:rgba(59,130,246,0.08);"` : "";
+          if (v === 0) return `<td class="num" style="${bul === m ? "background:rgba(59,130,246,0.08);" : ""}color:var(--muted)">-</td>`;
+          return `<td class="num"${hl}>${formatCountBadge(v)}</td>`;
+        }).join("");
+        return `
+          <tr class="clickable" onclick="openStudentModal(${s.id})">
+            <td class="num">${idx + 1}</td>
+            <td class="sticky">
+              <strong>${esc(s.nama_lengkap)}</strong>
+              <div style="font-size:11px; color:var(--muted)">${esc(s.nama_lapangan)} • ${esc(s.kelas)}</div>
+            </td>
+            ${mCells}
+            <td class="num">${formatCountBadge(s.total)}</td>
+          </tr>`;
+      }).join("");
+
+      container.innerHTML = `
+        <table>
+          <thead><tr><th>No</th><th class="sticky">Nama</th>${headMonths}<th>Total</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>`;
+    }
+
+    function renderLogs() {
+      const q = document.getElementById("searchLogs").value.trim().toLowerCase();
+      const pel = document.getElementById("filterLogPeleton").value;
+      const bul = document.getElementById("filterLogBulan").value;
+
+      const list = state.logs.filter(l => {
+        if (pel && l.peleton !== pel) return false;
+        if (bul && l.bulan !== bul) return false;
+        if (!q) return true;
+        return l.nama_lengkap.toLowerCase().includes(q) ||
+               l.nama_lapangan.toLowerCase().includes(q) ||
+               l.keterangan.toLowerCase().includes(q) ||
+               l.kelas.toLowerCase().includes(q);
+      });
+
+      const el = document.getElementById("logsContainer");
+      if (!list.length) {
+        el.innerHTML = `<div class="empty">Tidak ada catatan absensi.</div>`;
+        return;
+      }
+
+      el.innerHTML = list.map(l => `
+        <div class="log-item" style="cursor:pointer" onclick="openEditLogModal(${l.id})">
+          <div>
+            <strong>${esc(l.nama_lengkap)}</strong>
+            <span class="tag ${l.peleton === 'PUTRA' ? 'putra' : 'putri'}">${l.peleton}</span>
+            <div style="font-size:11px; color:var(--muted)">
+              ${esc(l.nama_lapangan)} • ${esc(l.kelas)} • <strong>${esc(l.bulan)}</strong> • Ket: ${esc(l.keterangan || '-')}
+            </div>
+          </div>
+          <span class="pill pill-low num">${l.jumlah}x ✏️</span>
+        </div>
+      `).join("");
+    }
+
+    function openStudentModal(id) {
+      const s = state.students.find(x => x.id === id);
+      if (!s) return;
+      document.getElementById("smTitle").textContent = "Edit / Catat Absen Siswa";
+      document.getElementById("smId").value = s.id;
+      document.getElementById("smNama").value = s.nama_lengkap;
+      document.getElementById("smLapangan").value = s.nama_lapangan;
+      document.getElementById("smKelas").value = s.kelas;
+      document.getElementById("smPeleton").value = s.peleton;
+      document.getElementById("smDeleteBtn").style.display = "inline-block";
+      document.getElementById("smAbsenSection").style.display = "block";
+      renderStudentLogsInModal(s.id);
+      document.getElementById("studentModal").classList.add("open");
+    }
+
+    function openNewStudentModal() {
+      document.getElementById("smTitle").textContent = "Tambah Siswa Baru";
+      document.getElementById("smId").value = "";
+      document.getElementById("smNama").value = "";
+      document.getElementById("smLapangan").value = "";
+      document.getElementById("smKelas").value = "";
+      document.getElementById("smPeleton").value = "PUTRA";
+      document.getElementById("smDeleteBtn").style.display = "none";
+      document.getElementById("smAbsenSection").style.display = "none";
+      document.getElementById("studentModal").classList.add("open");
+    }
+
+    function renderStudentLogsInModal(siswaId) {
+      const logs = state.logs.filter(l => l.siswa_id === siswaId);
+      const box = document.getElementById("smLogList");
+      if (!logs.length) {
+        box.innerHTML = `<div class="empty" style="padding:10px">Belum ada catatan ketidakhadiran.</div>`;
+        return;
+      }
+      box.innerHTML = logs.map(l => `
+        <div class="log-item">
+          <div>
+            <strong>${esc(l.bulan)}</strong> • ${l.jumlah}x • <span style="color:var(--muted)">${esc(l.keterangan)}</span>
+          </div>
+          <div style="display:flex; gap:6px">
+            <button onclick="openEditLogModal(${l.id})">✏️</button>
+          </div>
+        </div>
+      `).join("");
+    }
+
+    async function saveStudent() {
+      const id = document.getElementById("smId").value;
+      const body = {
+        nama_lengkap: document.getElementById("smNama").value.trim(),
+        nama_lapangan: document.getElementById("smLapangan").value.trim(),
+        kelas: document.getElementById("smKelas").value.trim(),
+        peleton: document.getElementById("smPeleton").value
+      };
+      if (!body.nama_lengkap) return showToast("Nama lengkap wajib diisi");
+      try {
+        if (id) {
+          await api(`/api/students/${id}`, { method: "PUT", body: JSON.stringify(body) });
+          showToast("Data siswa diperbarui");
+        } else {
+          await api(`/api/students`, { method: "POST", body: JSON.stringify(body) });
+          showToast("Siswa baru ditambahkan");
+        }
+        closeModal("studentModal");
+        await loadAll();
+      } catch (err) { showToast(err.message); }
+    }
+
+    async function deleteStudent() {
+      const id = document.getElementById("smId").value;
+      if (!id || !confirm("Yakin hapus siswa ini beserta riwayat absennya?")) return;
+      try {
+        await api(`/api/students/${id}`, { method: "DELETE" });
+        showToast("Siswa dihapus");
+        closeModal("studentModal");
+        await loadAll();
+      } catch (err) { showToast(err.message); }
+    }
+
+    async function addStudentLog() {
+      const siswaId = Number(document.getElementById("smId").value);
+      const body = {
+        siswa_id: siswaId,
+        bulan: document.getElementById("smLogBulan").value,
+        jumlah: Number(document.getElementById("smLogJml").value) || 1,
+        keterangan: document.getElementById("smLogKet").value.trim() || "tidak hadir"
+      };
+      try {
+        await api(`/api/logs`, { method: "POST", body: JSON.stringify(body) });
+        showToast("Absensi ditambahkan");
+        await loadAll();
+        renderStudentLogsInModal(siswaId);
+      } catch (err) { showToast(err.message); }
+    }
+
+    function openQuickLogModal() {
+      const sel = document.getElementById("qlSiswa");
+      const sorted = [...state.students].sort((a, b) => a.nama_lengkap.localeCompare(b.nama_lengkap));
+      sel.innerHTML = sorted.map(s =>
+        `<option value="${s.id}">${esc(s.nama_lengkap)} (${esc(s.nama_lapangan)} • ${esc(s.kelas)} • ${s.peleton})</option>`
+      ).join("");
+      document.getElementById("quickLogModal").classList.add("open");
+    }
+
+    async function submitQuickLog() {
+      const body = {
+        siswa_id: Number(document.getElementById("qlSiswa").value),
+        bulan: document.getElementById("qlBulan").value,
+        jumlah: Number(document.getElementById("qlJml").value) || 1,
+        keterangan: document.getElementById("qlKet").value.trim() || "tidak hadir"
+      };
+      try {
+        await api(`/api/logs`, { method: "POST", body: JSON.stringify(body) });
+        showToast("Absensi tercatat!");
+        closeModal("quickLogModal");
+        await loadAll();
+      } catch (err) { showToast(err.message); }
+    }
+
+    function openEditLogModal(id) {
+      const l = state.logs.find(x => x.id === id);
+      if (!l) return;
+      document.getElementById("elId").value = l.id;
+      document.getElementById("elSiswaInfo").textContent = `${l.nama_lengkap} (${l.nama_lapangan} • ${l.kelas})`;
+      document.getElementById("elBulan").value = l.bulan;
+      document.getElementById("elJml").value = l.jumlah;
+      document.getElementById("elKet").value = l.keterangan;
+      document.getElementById("editLogModal").classList.add("open");
+    }
+
+    async function saveLogEdit() {
+      const id = document.getElementById("elId").value;
+      const body = {
+        bulan: document.getElementById("elBulan").value,
+        jumlah: Number(document.getElementById("elJml").value) || 1,
+        keterangan: document.getElementById("elKet").value.trim()
+      };
+      try {
+        await api(`/api/logs/${id}`, { method: "PUT", body: JSON.stringify(body) });
+        showToast("Catatan absensi diperbarui");
+        closeModal("editLogModal");
+        await loadAll();
+        const openSid = Number(document.getElementById("smId").value);
+        if (openSid) renderStudentLogsInModal(openSid);
+      } catch (err) { showToast(err.message); }
+    }
+
+    async function deleteLogEntry() {
+      const id = document.getElementById("elId").value;
+      if (!id || !confirm("Hapus catatan absensi ini?")) return;
+      try {
+        await api(`/api/logs/${id}`, { method: "DELETE" });
+        showToast("Catatan dihapus");
+        closeModal("editLogModal");
+        await loadAll();
+        const openSid = Number(document.getElementById("smId").value);
+        if (openSid) renderStudentLogsInModal(openSid);
+      } catch (err) { showToast(err.message); }
+    }
+
+    async function exportCSV() {
+      try {
+        const res = await fetch("/api/export.csv", { headers: authHeaders() });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        const blob = await res.blob();
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = "rekap-absensi-peleton.csv";
+        a.click();
+        showToast("CSV diunduh");
+      } catch (err) { showToast(err.message); }
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove("open"); }
+    function esc(s) {
+      return String(s || "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+    }
+
+    populateMonthSelects();
+    applyInitialQueryParams();
+    loadAll();
+  </script>
+</body>
+</html>
